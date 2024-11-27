@@ -85,6 +85,10 @@ the default.
          */
         NoiseParams getNoiseParams() const;
         /**
+         * Gets the Kalman gain.
+         */
+        Eigen::MatrixXd getKalmanGain() const;
+        /**
          * Gets the filter's current contact states.
          * @return  map of contact ID and bool that indicates if contact is registed
          */
@@ -225,6 +229,7 @@ the default.
         mapIntVector3d prior_landmarks_;
         std::map<int,int> estimated_landmarks_;
         Eigen::Vector3d magnetic_field_;
+        Eigen::MatrixXd K_;
 
         Eigen::MatrixXd StateTransitionMatrix(Eigen::Vector3d& w, Eigen::Vector3d& a, double dt);
         Eigen::MatrixXd DiscreteNoiseMatrix(Eigen::MatrixXd& Phi, double dt);

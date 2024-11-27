@@ -75,6 +75,9 @@ void InEKF::setState(RobotState state) { state_ = state; }
 // Return noise params
 NoiseParams InEKF::getNoiseParams() const { return noise_params_; }
 
+// Return Kalman gain
+Eigen::MatrixXd InEKF::getKalmanGain() const { return K_; }
+
 // Sets the filter's noise parameters
 void InEKF::setNoiseParams(NoiseParams params) { noise_params_ = params; }
 
@@ -330,6 +333,7 @@ void InEKF::CorrectRightInvariant(const Eigen::MatrixXd& Z, const Eigen::MatrixX
     Eigen::MatrixXd PHT = P * H.transpose();
     Eigen::MatrixXd S = H * PHT + N;
     Eigen::MatrixXd K = PHT * S.inverse();
+    K_ = K;
 
     // Compute state correction vector
     Eigen::VectorXd delta = K*Z;
@@ -382,6 +386,7 @@ void InEKF::CorrectLeftInvariant(const Eigen::MatrixXd& Z, const Eigen::MatrixXd
     Eigen::MatrixXd PHT = P * H.transpose();
     Eigen::MatrixXd S = H * PHT + N;
     Eigen::MatrixXd K = PHT * S.inverse();
+    K_=K;
 
     // Compute state correction vector
     Eigen::VectorXd delta = K*Z;
