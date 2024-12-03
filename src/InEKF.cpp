@@ -78,6 +78,9 @@ NoiseParams InEKF::getNoiseParams() const { return noise_params_; }
 // Return Kalman gain
 Eigen::MatrixXd InEKF::getKalmanGain() const { return K_; }
 
+// Return innovation
+Eigen::VectorXd InEKF::getInnovation() const { return Z_; }
+
 // Sets the filter's noise parameters
 void InEKF::setNoiseParams(NoiseParams params) { noise_params_ = params; }
 
@@ -493,6 +496,7 @@ void InEKF::CorrectKinematics(const vectorKinematics& measured_kinematics) {
     }
 
     // Correct state using stacked observation
+    Z_=Z;
     if (Z.rows()>0) {
         if (state_.getStateType() == StateType::WorldCentric) {
             this->CorrectRightInvariant(Z,H,N);

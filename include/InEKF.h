@@ -89,6 +89,10 @@ the default.
          */
         Eigen::MatrixXd getKalmanGain() const;
         /**
+         * Gets the innovation.
+         */
+        Eigen::VectorXd getInnovation() const;
+        /**
          * Gets the filter's current contact states.
          * @return  map of contact ID and bool that indicates if contact is registed
          */
@@ -230,6 +234,7 @@ the default.
         std::map<int,int> estimated_landmarks_;
         Eigen::Vector3d magnetic_field_;
         Eigen::MatrixXd K_;
+        Eigen::VectorXd Z_;
 
         Eigen::MatrixXd StateTransitionMatrix(Eigen::Vector3d& w, Eigen::Vector3d& a, double dt);
         Eigen::MatrixXd DiscreteNoiseMatrix(Eigen::MatrixXd& Phi, double dt);
