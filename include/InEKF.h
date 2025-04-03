@@ -93,6 +93,10 @@ the default.
          */
         Eigen::VectorXd getInnovation() const;
         /**
+         * Gets the residual.
+         */
+        Eigen::VectorXd getResidual() const;
+        /**
          * Gets the filter's current contact states.
          * @return  map of contact ID and bool that indicates if contact is registed
          */
@@ -195,6 +199,11 @@ the default.
          */
         void Propagate(const Eigen::Matrix<double,6,1>& imu, double dt);
         /** 
+         * Computes the residual between the updated state estimate and the measured forward kinematics between the IMU and a set of contact frames.
+         * @param measured_kinematics: the measured kinematics containing the contact id, relative pose measurement in the IMU frame, and covariance
+         */
+        Eigen::VectorXd ComputeResidual(const vectorKinematics& measured_kinematics);
+        /** 
          * Corrects the state estimate using the measured forward kinematics between the IMU and a set of contact frames.
          * If contact is indicated but not included in the state, the state is augmented to include the estimated contact position.
          * If contact is not indicated but is included in the state, the contact position is marginalized out of the state. 
@@ -234,7 +243,8 @@ the default.
         std::map<int,int> estimated_landmarks_;
         Eigen::Vector3d magnetic_field_;
         Eigen::MatrixXd K_;
-        Eigen::VectorXd Z_;
+        Eigen::VectorXd Z_; // innovation
+        Eigen::VectorXd Y_; // residual
 
         Eigen::MatrixXd StateTransitionMatrix(Eigen::Vector3d& w, Eigen::Vector3d& a, double dt);
         Eigen::MatrixXd DiscreteNoiseMatrix(Eigen::MatrixXd& Phi, double dt);

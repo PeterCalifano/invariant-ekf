@@ -81,6 +81,9 @@ Eigen::MatrixXd InEKF::getKalmanGain() const { return K_; }
 // Return innovation
 Eigen::VectorXd InEKF::getInnovation() const { return Z_; }
 
+// Return residual
+Eigen::VectorXd InEKF::getResidual() const { return Y_; }
+
 // Sets the filter's noise parameters
 void InEKF::setNoiseParams(NoiseParams params) { noise_params_ = params; }
 
@@ -419,6 +422,49 @@ void InEKF::CorrectLeftInvariant(const Eigen::MatrixXd& Z, const Eigen::MatrixXd
     state_.setP(P_new); 
 }   
 
+// Compute residual for kinematics measurement
+Eigen::VectorXd InEKF::ComputeResidual(const vectorKinematics& measured_kinematics) {
+    Eigen::VectorXd Y;
+    vector<int> used_contact_ids;
+    for (vectorKinematicsIterator it=measured_kinematics.begin(); it!=measured_kinematics.end(); ++it) {
+        // Detect and skip if an ID is not unique (this would cause singularity issues in InEKF::Correct)
+        if (find(used_contact_ids.begin(), used_contact_ids.end(), it->id) != used_contact_ids.end()) { 
+            cout << "Duplicate contact ID detected! Skipping measurement.\n";
+            continue; 
+        } else { used_contact_ids.push_back(it->id); }
+
+        // Find contact indicator for the kinematics measurement
+        map<int,bool>::iterator it_contact = contacts_.find(it->id);
+        if (it_contact == contacts_.end()) { continue; } // Skip if contact state is unknown
+        bool contact_indicated = it_contact->second;
+
+        // See if we can find id estimated_contact_positions
+        map<int,int>::iterator it_estimated = estimated_contact_positions_.find(it->id);
+        bool found = it_estimated!=estimated_contact_positions_.end();
+
+        // If contact is indicated and id is found in estimated_contacts_, then correct using kinematics
+        if (contact_indicated && found) {
+            int dimX = state_.dimX();
+            int dimTheta = state_.dimTheta();
+            int dimP = state_.dimP();
+            int startIndex;
+    
+            // Fill out Y
+            startIndex = Y.rows();
+            Y.conservativeResize(startIndex+3, Eigen::NoChange);
+            Eigen::Matrix3d R = state_.getRotation();
+            Eigen::Vector3d p = state_.getPosition();
+            Eigen::Vector3d d = state_.getVector(it_estimated->second);  
+            if (state_.getStateType() == StateType::WorldCentric) {
+                Y.segment(startIndex,3) = R*it->pose.block<3,1>(0,3) - (d - p); 
+            } else {
+                Y.segment(startIndex,3) = R.transpose()*(it->pose.block<3,1>(0,3) - (p - d)); 
+            }
+        }
+    }
+    return Y;
+}
+
 // Correct state using kinematics measured between imu and contact point
 void InEKF::CorrectKinematics(const vectorKinematics& measured_kinematics) {
     Eigen::VectorXd Z, Y, b;
@@ -495,8 +541,10 @@ void InEKF::CorrectKinematics(const vectorKinematics& measured_kinematics) {
         }
     }
 
-    // Correct state using stacked observation
+    // Save innovation 
     Z_=Z;
+
+    // Correct state using stacked observation
     if (Z.rows()>0) {
         if (state_.getStateType() == StateType::WorldCentric) {
             this->CorrectRightInvariant(Z,H,N);
@@ -506,6 +554,9 @@ void InEKF::CorrectKinematics(const vectorKinematics& measured_kinematics) {
             this->CorrectLeftInvariant(Z,H,N);
         }
     }
+    
+    // Save residual 
+    Y_=this->ComputeResidual(measured_kinematics);
 
     // Remove contacts from state
     if (remove_contacts.size() > 0) {
