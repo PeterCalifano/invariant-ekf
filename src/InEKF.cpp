@@ -442,15 +442,10 @@ Eigen::VectorXd InEKF::ComputeResidual(const vectorKinematics& measured_kinemati
         map<int,int>::iterator it_estimated = estimated_contact_positions_.find(it->id);
         bool found = it_estimated!=estimated_contact_positions_.end();
 
-        // If contact is indicated and id is found in estimated_contacts_, then correct using kinematics
-        if (contact_indicated && found) {
-            int dimX = state_.dimX();
-            int dimTheta = state_.dimTheta();
-            int dimP = state_.dimP();
-            int startIndex;
-    
+        // If contact is indicated and id is found in estimated_contacts_, then compute residual
+        if (contact_indicated && found) {    
             // Fill out Y
-            startIndex = Y.rows();
+            int startIndex = Y.rows();
             Y.conservativeResize(startIndex+3, Eigen::NoChange);
             Eigen::Matrix3d R = state_.getRotation();
             Eigen::Vector3d p = state_.getPosition();
