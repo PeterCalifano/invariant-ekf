@@ -88,6 +88,10 @@ the default.
          * Gets the Kalman gain.
          */
         Eigen::MatrixXd getKalmanGain() const;
+	 /**
+         * Gets the Adjoint matrix.
+         */
+        Eigen::MatrixXd getAdjoint_SEK3(const RobotState& state) const;
         /**
          * Gets the innovation.
          */

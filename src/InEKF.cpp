@@ -78,6 +78,9 @@ NoiseParams InEKF::getNoiseParams() const { return noise_params_; }
 // Return Kalman gain
 Eigen::MatrixXd InEKF::getKalmanGain() const { return K_; }
 
+// Return Adjoint matrix
+Eigen::MatrixXd InEKF::getAdjoint_SEK3(const RobotState& state) const { return Adjoint_SEK3(state.getWorldX()); }
+
 // Return innovation
 Eigen::VectorXd InEKF::getInnovation() const { return Z_; }
 
