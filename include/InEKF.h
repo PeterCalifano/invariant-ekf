@@ -208,6 +208,15 @@ the default.
         void CorrectPosition(const Eigen::Vector3d& measured_position, const Eigen::Matrix3d& covariance, const Eigen::Vector3d& indices);
         /** TODO: Untested contact position measurement*/
         void CorrectContactPosition(const int id, const Eigen::Vector3d& measured_contact_position, const Eigen::Matrix3d& covariance, const Eigen::Vector3d& indices);
+        /**
+         * Batched version of CorrectContactPosition — stacks all active contact constraints into a single
+         * CorrectRightInvariant call, reducing the Joseph-form covariance update from O(n * dimP^3) to O(dimP^3).
+         * @param ids: vector of contact IDs to constrain
+         * @param measured_contact_position: desired world-frame position (e.g. {0,0,0} for ground plane)
+         * @param covariance: 3x3 measurement covariance (same for all contacts)
+         * @param indices: axis selector (e.g. {0,0,1} for z-only)
+         */
+        void CorrectContactPositionBatched(const std::vector<int>& ids, const Eigen::Vector3d& measured_contact_position, const Eigen::Matrix3d& covariance, const Eigen::Vector3d& indices);
     /// @} 
 
     /** @example kinematics.cpp

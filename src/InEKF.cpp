@@ -1000,6 +1000,61 @@ void InEKF::CorrectContactPosition(const int id, const Eigen::Vector3d& measured
 }
 
 
+void InEKF::CorrectContactPositionBatched(const std::vector<int>& ids, const Eigen::Vector3d& measured_contact_position, const Eigen::Matrix3d& covariance, const Eigen::Vector3d& indices) {
+    // Build axis-selection matrix PI from indices
+    Eigen::MatrixXd PI(0, 3);
+    for (int i = 0; i < 3; ++i) {
+        if (indices(i) != 0) {
+            int r = PI.rows();
+            PI.conservativeResize(r + 1, 3);
+            PI.row(r).setZero();
+            PI(r, i) = 1.0;
+        }
+    }
+    if (PI.rows() == 0) return;
+    const int k = PI.rows(); // axes constrained (1 for z-only)
+
+    // Collect active contacts that exist in the state
+    struct ActiveContact { int state_idx; Eigen::Vector3d d; };
+    std::vector<ActiveContact> active;
+    active.reserve(ids.size());
+    for (int id : ids) {
+        auto it = estimated_contact_positions_.find(id);
+        if (it != estimated_contact_positions_.end()) {
+            active.push_back({it->second, state_.getVector(it->second)});
+        }
+    }
+    if (active.empty()) return;
+
+    const int n      = static_cast<int>(active.size());
+    const int dimP   = state_.dimP();
+    const int dimTheta = state_.dimTheta();
+
+    // Pre-compute per-contact block (same covariance for all)
+    const Eigen::MatrixXd N_block = PI * covariance * PI.transpose(); // k×k
+
+    // Stack H (k*n × dimP), N (k*n × k*n), Z (k*n)
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(k * n, dimP);
+    Eigen::MatrixXd N = Eigen::MatrixXd::Zero(k * n, k * n);
+    Eigen::VectorXd Z = Eigen::VectorXd::Zero(k * n);
+
+    for (int j = 0; j < n; ++j) {
+        const int    s = active[j].state_idx;
+        const auto&  d = active[j].d;
+
+        Eigen::MatrixXd H_full = Eigen::MatrixXd::Zero(3, dimP);
+        H_full.block<3, 3>(0, 0)            = -skew(d);
+        H_full.block<3, 3>(0, 3 * s - 6)   = Eigen::Matrix3d::Identity();
+
+        H.block(k * j, 0, k, dimP)     = PI * H_full;
+        N.block(k * j, k * j, k, k)    = N_block;
+        Z.segment(k * j, k)             = PI * (measured_contact_position - d);
+    }
+
+    this->CorrectRightInvariant(Z, H, N);
+}
+
+
 void removeRowAndColumn(Eigen::MatrixXd& M, int index) {
     unsigned int dimX = M.cols();
     // cout << "Removing index: " << index<< endl;
