@@ -20,7 +20,6 @@ namespace inekf {
 class NoiseParams {
 
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         NoiseParams();
 
         void setGyroscopeNoise(double std);
@@ -39,10 +38,6 @@ class NoiseParams {
         void setAccelerometerBiasNoise(const Eigen::Vector3d& std);
         void setAccelerometerBiasNoise(const Eigen::Matrix3d& cov);  
 
-        void setLandmarkNoise(double std);
-        void setLandmarkNoise(const Eigen::Vector3d& std);
-        void setLandmarkNoise(const Eigen::Matrix3d& cov);
-
         void setContactNoise(double std);
         void setContactNoise(const Eigen::Vector3d& std);
         void setContactNoise(const Eigen::Matrix3d& cov);
@@ -51,7 +46,6 @@ class NoiseParams {
         Eigen::Matrix3d getAccelerometerCov();
         Eigen::Matrix3d getGyroscopeBiasCov();
         Eigen::Matrix3d getAccelerometerBiasCov();
-        Eigen::Matrix3d getLandmarkCov();
         Eigen::Matrix3d getContactCov();
 
         friend std::ostream& operator<<(std::ostream& os, const NoiseParams& p);  
